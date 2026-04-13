@@ -169,35 +169,32 @@
 </div>
 
 <script>
-  const WALLET   = 'sQqVteu9yQR2rFrtvs959xxN6AGpFkxiYyAWrAfjg4o';
+  // !! Replace this with your Cloudflare Worker URL after deploying !!
+  const PROXY_URL = 'https://YOUR_WORKER.YOUR_SUBDOMAIN.workers.dev';
+
   const KEYWORDS = ['claynosaurz', 'call of saga', 'call-of-saga', 'clayno'];
-  const INTERVAL = 5000;   // ms per slide
-  const MAX_DOTS = 12;     // max dots shown (too many look bad on 240px)
+  const INTERVAL = 5000;
+  const MAX_DOTS = 12;
 
   let nfts    = [];
   let current = 0;
-  let timer   = null;
 
-  /* ---------- fetch ---------- */
   async function fetchWalletNFTs() {
-    const url = `https://api-mainnet.magiceden.io/v2/wallets/${WALLET}/tokens` +
-                `?offset=0&limit=200&listedFilter=both`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`ME ${res.status}`);
+    const res = await fetch(PROXY_URL);
+    if (!res.ok) throw new Error(`proxy ${res.status}`);
     return res.json();
   }
 
   function matchesCollection(token) {
     const fields = [
-      token.collection   || '',
-      token.name         || '',
-      token.symbol       || '',
+      token.collection      || '',
+      token.name            || '',
+      token.symbol          || '',
       token.updateAuthority || ''
     ].join(' ').toLowerCase();
     return KEYWORDS.some(k => fields.includes(k));
   }
 
-  /* ---------- build UI ---------- */
   function buildSlides() {
     const container = document.getElementById('slides-container');
     const dotsEl    = document.getElementById('dots');
@@ -205,13 +202,12 @@
     dotsEl.innerHTML    = '';
 
     nfts.forEach((nft, i) => {
-      /* slide */
       const slide = document.createElement('div');
       slide.className = 'slide' + (i === 0 ? ' active' : '');
 
-      const img = document.createElement('img');
-      img.alt  = nft.name;
-      img.src  = nft.image;
+      const img   = document.createElement('img');
+      img.alt     = nft.name;
+      img.src     = nft.image;
       img.onerror = () => {
         img.src = `https://placehold.co/182x182/0a0f0f/1D9E75?text=${encodeURIComponent(nft.name.slice(0,8))}`;
       };
@@ -223,7 +219,6 @@
       slide.append(img, nameEl);
       container.appendChild(slide);
 
-      /* dot */
       if (nfts.length <= MAX_DOTS) {
         const dot = document.createElement('div');
         dot.className = 'dot' + (i === 0 ? ' active' : '');
@@ -237,19 +232,17 @@
       s.classList.toggle('active', i === index));
     document.querySelectorAll('.dot').forEach((d, i) =>
       d.classList.toggle('active', i === index));
-    document.getElementById('counter').textContent =
-      `${index + 1} / ${nfts.length}`;
+    document.getElementById('counter').textContent = `${index + 1} / ${nfts.length}`;
   }
 
   function startCycle() {
     if (nfts.length < 2) return;
-    timer = setInterval(() => {
+    setInterval(() => {
       current = (current + 1) % nfts.length;
       goTo(current);
     }, INTERVAL);
   }
 
-  /* ---------- init ---------- */
   async function init() {
     try {
       const all      = await fetchWalletNFTs();
@@ -276,8 +269,8 @@
   }
 
   function showError(msg) {
-    const s = document.getElementById('status');
-    s.innerHTML = `<div class="error-msg">${msg.replace(/\n/g,'<br>')}</div>`;
+    document.getElementById('status').innerHTML =
+      `<div class="error-msg">${msg.replace(/\n/g,'<br>')}</div>`;
   }
 
   init();
